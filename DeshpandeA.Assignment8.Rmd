@@ -1,0 +1,220 @@
+---
+title: 'Phase 1 and 2 Analysis: Diamonds Data and Collatz Conjecture'
+author: "Anika Deshpande"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_notebook:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE, 
+  fig.cap = TRUE
+  )
+```
+
+## **Collatz Conjecture Stopping Numbers**
+
+#### What is the Collatz Conjecture?
+
+The Collatz Conjecture is the a recursive mathematical function that asks whether repeating the same two arithmetic operations will reduce every positive integer to 1. If n is even, then divide the number by 2. If n is odd, then multiply the number by 3 and add one. When n is 1, stop. What we want to explore with this function is what is the most frequent stopping time?
+
+```{r, echo = TRUE, fig.cap = "The frequency of stopping numbers collected from testing numbers from 1 to 10000"}
+# create an object to assign the function to
+getCollatzConjecture <- function(num, count=0) {
+#create an if statement so that if n=1, the function stops 
+if (num == 1) {
+return (count)
+}
+#if n is even, divide it by 2 and continue the function
+else if (num%%2 == 0) {
+getCollatzConjecture(num/2, count+1)
+}
+else {
+#if n is odd, multiply by 3, add 1, and continue the function
+getCollatzConjecture(3*num +1, count+1)
+}
+}
+#run the function for a range to collect data and put that data into a histogram
+stoppingNumbers <- sapply(
+X = 1:10000,
+FUN = getCollatzConjecture
+)
+
+hist(stoppingNumbers)
+```
+
+#### What Message Does the Histogram Convey?
+
+The histogram shows the stopping number on the x-axis and how many times (frequency) that stopping number was outputted from the range of numbers that were put into the Collatz function on the y-axis. Using the histogram, it can be seen that the tallest bar takes places around the stopping number 50. This means that the most frequent stopping number in the large range of numbers tested is roughly 50. Another way to put this is that it takes 50 arithmetic operations for a number to get to 1.
+
+\newpage
+
+## **Diamond Prices**
+
+#### Intro to the Diamonds Data Set
+
+The Diamonds data set in the ggplot2 package in r gives all kinds of information on diamonds such as carat, cut, color, clarity, depth, table, price, height, width, and length. Using the diamonds data set, information about what factors effects the price of diamonds can be queried. In the following section two questions will be looked into. The relationship between the price of diamonds relative to the color and weight (in carats) of the diamonds and the relationship of the price of diamonds relative to cut will be explored.
+
+#### Scatter Plots of Diamond Price vs. Color and Carat
+
+```{r, fig.cap = "Prices of diamonds relative to carats and the colors F, H, and J"}
+# create graph one containing colors "J", "H", and "F"
+# load ggplot2 and dplyr
+library(ggplot2)
+library(dplyr)
+data(diamonds)
+#filter the data to isolate only the rows with the specified colors
+diamonds_data1 <- diamonds %>%
+  #use slice sample to use portion of data so visualization is cleaner
+  slice_sample(prop = 0.3) %>%
+  filter(color %in% c("J", "H", "F"))
+
+#plot the filtered data by declaring the variables
+ggplot(
+  data = diamonds_data1,
+  mapping = aes(x = carat, y = price, colour = color)
+)+
+
+#assign sizes to the points and line of best fit
+geom_point(shape = "circle", size = 1.5) +
+geom_smooth(span = 0.75, se = FALSE) +
+
+#assign a color to each color and create the legend
+scale_color_manual(
+  values = c(F = "#E40A0A",
+  H = "#20AFEC",
+  J = "#000000")
+) +
+
+# add titles and labels
+labs(
+  x = "Weight of Diamond in Carats ",
+  y = "Price of Diamond ($)",
+  title = "Price of Diamond vs. Weight(Carats) and Color"
+) +
+theme_minimal() +
+ylim(0,20000)
+
+```
+
+```{r, fig.cap = "Prices of diamonds relative to carats and the colors D, E, G, and I"}
+#create graph 2 containing colors "E", "I", "G", "D"
+#load ggplot and dplyr
+library(ggplot2)
+library(dplyr)
+data(diamonds)
+#filter the data for the specified colors
+diamonds_data2 <- diamonds %>%
+  #use slice sample to use portion of data so visualization is cleaner
+  slice_sample(prop = 0.3) %>%
+  filter(!(color %in% c("J", "H", "F")))
+#plot the line graph and define the variables
+ggplot(
+  data = diamonds_data2,
+  mapping = aes(x = carat, y = price, colour = color)
+)+
+
+#assign sizes to the points and line of best fit
+geom_point(shape = "circle", size = 1.5) +
+geom_smooth(span = 0.5, se = FALSE) +
+
+#assign colors to each color group
+scale_color_manual(
+  values = c(D = "#12B501",
+  E = "#DC0C0C",
+  G = "#000000",
+  I = "#20AFEC")
+) +
+
+#add titles and labels
+labs(
+  x = "Weight of Diamond in Carats",
+  y = "Price of Diamond ($)",
+  title = "Price of Diamond vs Weight (Carats) and Color"
+) +
+theme_minimal() +
+#fix the scaling so that there is no data points beyond the graph labels
+ylim(0,20000)
+
+
+```
+
+#### What can be seen about diamond price relative to color and weight?
+
+By comparing these two visualizations, three attributes can essentially are use; price, color, and carats. Price it taken as the dependent variable to show how price is affected by the color and carats of a diamond are used. Additionally, the price trend is represented by a line of best fit. In the visualizations you can see groupings based off of the color of the line showing that some colors of the same carats of a diamond will increase or decrease price accordingly, and that the higher the carats of a diamond is, regardless of color, price will increase. The colors "D" (Figure 2) and "F" (Figure 1) relatively, have some of the highest priced diamonds for example.
+
+#### Summary Table of Diamond Price vs. Cut
+
+```{r, fig.cap = "Summary Table of 10 different statistics on the price of a diamond for each cut cateogry"}
+#load all packages
+library(kableExtra)
+library(knitr)
+library(janitor)
+library(dplyr)
+library(ggplot2)
+#load the data set
+data(diamonds)
+#create a variable object to assign the function to
+#group by the cut and use select to keep only the x values
+diamondsLength <- diamonds %>%
+  group_by(cut) %>%
+  select(cut, price) %>%
+#use the summarize function to get the ten statistics
+#for quantile probs will equal 0.2 and so on
+summarize(
+  across(
+      .cols = where(is.numeric),
+      .fns = list(
+      min = ~min(price, na.rm = TRUE),
+      Q1 = ~quantile(price, probs = 0.20, na.rm = TRUE),
+      Q2 = ~quantile(price, probs = 0.40, na.rm = TRUE),
+      median = ~median(price, na.rm = TRUE),
+      Q3 = ~quantile(price, probs = 0.60, na.rm = TRUE),
+      Q4 = ~quantile(price, probs = 0.80, na.rm = TRUE),
+      max = ~max(price, na.rm = TRUE),
+      sam = ~mean(price, na.rm = TRUE),
+      sasd = ~sd(price, na.rm = TRUE)
+      ),
+#round the values to avoid unecessarily large amount of decimal spaces
+    round(digits = 2)
+    ),
+#get count and format it so that big numbers are separated with commas
+  count = format(n(), big.mark = ","),
+)
+#rename the columns
+colnames(diamondsLength) <- c("Cut", "Min", "1st Quintile", "2nd Quintile", "Median", "3rd Quintile", "4th Quintile", "Max", "Mean", "Standard Deviation", "Count")
+#use kable to tidy the table (add caption, add grid, align columns)
+diamondsLength %>%
+kable(
+  caption = "Statistics on Diamond Length vs. Cut",
+  booktabs = TRUE,
+  align = c("l", rep("c", 6))
+) %>%
+#separate rows through striping the colors
+kableExtra::kable_styling(
+  bootstrap_options = c("striped", "condensed"),
+  font_size = 6
+) %>%
+kableExtra::kable_classic()
+```
+
+#### What Can be Seen About Diamond Price Relative to Cut?
+
+The Summary Table shows different statistics using the attributes price and cut that could be used to compare prices of the different cuts. Specifically, from table, it can be concluded that diamonds of premium and fair cut generally have higher prices than diamonds of other cuts. An inexpensive diamond would be one of ideal cut. These conclusions can be determined by using the median and mean.
+
+#### Overall
+
+Using the visualizations from this section, the ideal or highest priced diamond would be a diamond of fair cut with a high number of carats and is the color "D" or "F". A diamond that would be inexpensive would be a diamond of ideal cut a low number of carats and is the color "H" or "G".
+
+## **What I've Learned**
+
+#### Coding
+
+In this course so far, I have learned a lot about coding. At the start of the semester, I knew nothing about r or how to use it. I now feel confident knowing how to use r and functions in r for creating appropriate visualizations and tables. For example, in the diamonds data (Figures 2 and 3) to create the scatter plot, I loaded esquisse and played around with it to create my visualizations. Code polishing was necessary, but esquisse made it easy to play around with different visualizations and to have a base code. In many of our past assignments, we have used esquisse in order to create our visualizations. Additionally, I have learned about proper coding etiquette such as commenting, rules for naming variables (camel case and snake case), consistency, and formatting. Finally, I learned about the process for planning and polishing code with the acronym PCIP (plan, code, improve, and polish).
+
+#### Appropriate Visualizations
+
+Not only have I learned about coding in this course, but I have learned about how to code and create appropriate data visualizations and what criteria classifies a visualization as appropriate. Through the readings from Kossolyn and Tuftes, some main takeaways I got are that visualizations have to be aesthetically appealing, not have an overwhelming amount of information, and should only contain knowledge appropriate for the audience. More specifically, I thought it was interesting when the readings talked about choosing colors for a visualization with multiple "groupings". The readings said to pick colors of different tones and brightness so that way different parts of the brain register each grouping and the visualization will be easier to understand. I didn't know different parts of the brain registered different colors, so that was very cool to learn. One of the biggest takeaways talked about in class from the readings was the planning code and creating a "duck". The duck refers to a visualization that is so unappealing to the eye, it is just a giant mess. I used these rules in all the assignments where I created visualizations. For example, in Figures 2 and 3, I had to polish my code to change the colors since the original color scheme was very harsh on the eyes. Additionally, I changed the code to only use a sample of the data since the numerous data points made the graph overwhelming to look it. Finally, I grouped the data onto different graphs so that there wouldn't be eight different groupings on one, making the visualization overwhelming.
